@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -33,6 +36,7 @@ public class CollectResultsStatistics {
 		int dockingProgram;
 		float searchTime;
 		float TotalTime;
+		float base=1;
 		//float OverheadTime;
 		float[] conformationBindingEnergies= new float[9];
 		float[] conformationRMSDsToPDB= new float[9];
@@ -72,11 +76,18 @@ public class CollectResultsStatistics {
 			//add to pairsData
 			pairsData.put(pairId, preparedPairData);
 			for (int i = 0; i < suffixes.length; i++) {//3 tools
-				File dockedLigandFile = new File(dockedLigandsFilesFolderString, (pairId+"_lig_docked_"+suffixes[i]+".pdbqt"));
+				String suffix = suffixes[i];
+				File dockedLigandFile = new File(dockedLigandsFilesFolderString, (pairId+"_lig_docked_"+suffix+".pdbqt"));
 				ReceptorLigandPairData dockedPairData = parseFile(dockedLigandFile);
 				PairDockingResult pairDockingResult = allPairsDockingResults.get(i).get(pairId);
 				//set missing values in the PairDockingResult object
 				pairDockingResult.dockingProgram=i;
+				
+				Pattern x = Pattern.compile("_X([\\d.]+)");
+				Matcher matcher = x.matcher(suffix);
+				if (matcher.find()) {
+					pairDockingResult.base= Float.parseFloat(matcher.group(1));
+				}
 				pairDockingResult.allAtoms=dockedPairData.allAtoms;
 //				pairDockingResult.time;//already done
 //				pairDockingResult.conformationBindingEnergies;//already done
@@ -196,8 +207,7 @@ public class CollectResultsStatistics {
 					rowTime.createCell(colNumTime++).setCellValue(Math.round(dockingResult.searchTime * 1000.0)/1000.0);
 					rowTime.createCell(colNumTime++).setCellValue(Math.round((dockingResult.TotalTime - dockingResult.searchTime) * 1000.0)/1000.0);
 					rowTime.createCell(colNumTime++).setCellValue(Math.round(dockingResult.TotalTime * 1000.0)/1000.0);
-					//base to get from file name
-					rowTime.createCell(colNumTime++).setCellValue(1);
+					rowTime.createCell(colNumTime++).setCellValue(dockingResult.base);
 
 					float[] bindingEnergies = dockingResult.conformationBindingEnergies;
 					for (int k = 0; k < bindingEnergies.length; k++) {
