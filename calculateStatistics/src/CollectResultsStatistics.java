@@ -31,7 +31,9 @@ public class CollectResultsStatistics {
 	}
 	public static class PairDockingResult{
 		int dockingProgram;
-		float time;
+		float searchTime;
+		float TotalTime;
+		//float OverheadTime;
 		float[] conformationBindingEnergies= new float[9];
 		float[] conformationRMSDsToPDB= new float[9];
 		ArrayList<Atom[]> allAtoms;//size is up to 9 (9 models) here
@@ -117,7 +119,7 @@ public class CollectResultsStatistics {
 			out.format("%s\t%d\t%d", pairId,pairData.noHeavyAtoms,pairData.noActiveBonds);
 			for (int j = 0; j < allPairsDockingResults.size(); j++) {
 				PairDockingResult dockingResult=allPairsDockingResults.get(j).get(pairId);
-				out.format("\t%.3f",dockingResult.time);
+				out.format("\t%.3f",dockingResult.searchTime);
 				float[] bindingEnergies = dockingResult.conformationBindingEnergies;
 				for (int k = 0; k < bindingEnergies.length; k++) {
 					if (bindingEnergies[k]!=0) {
@@ -140,14 +142,23 @@ public class CollectResultsStatistics {
 			Workbook workBook = new XSSFWorkbook(fileInputStream);
 			Sheet sheet = workBook.getSheet("RawData");
 			workBook.setSheetOrder("RawData", 0);
+			//Nafisa
+			Sheet timeSheet= workBook.getSheet("RawData-2");
+			workBook.setSheetOrder("RawData-2", 2);
 //			 Workbook workBook = new SXSSFWorkbook();
 //			 Sheet sheet = workBook.createSheet("RawData");  
 
 			//print header
-			Row rowHead = sheet.createRow(rowNum++);
+			Row rowHead = sheet.createRow(rowNum);
+			Row rowHeadTime = timeSheet.createRow(rowNum);
+			rowNum++;
 			rowHead.createCell(colNum++).setCellValue("Pair Id");
 			rowHead.createCell(colNum++).setCellValue("Heavy Atoms");
 			rowHead.createCell(colNum++).setCellValue("Active Bonds");
+			
+			//Nafisa
+			int colNumTime=0;
+			rowHeadTime.createCell(colNumTime++).setCellValue("Pair Id");
 
 			for (int i = 0; i < allPairsDockingResults.size(); i++) {//3
 				rowHead.createCell(colNum++).setCellValue(suffixes[i] +" Time");
@@ -156,20 +167,38 @@ public class CollectResultsStatistics {
 					rowHead.createCell(colNum++).setCellValue(String.format("%s B.Energy(%d)",suffixes[i],j+1));
 					rowHead.createCell(colNum++).setCellValue(String.format("%s RMSD(%d)",suffixes[i],j+1));
 				}
+				
+				//Nafisa
+				rowHeadTime.createCell(colNumTime++).setCellValue(suffixes[i] +" SearchTime");
+				rowHeadTime.createCell(colNumTime++).setCellValue(suffixes[i] +" OverheadTime");
+				rowHeadTime.createCell(colNumTime++).setCellValue(suffixes[i] +" TotalTime");
+				rowHeadTime.createCell(colNumTime++).setCellValue(suffixes[i] +" Base");
 			}
 
 			//print data
 			for (int i = 0; i < pairIds.size(); i++) {
-				Row row = sheet.createRow((rowNum++));
+				Row row = sheet.createRow((rowNum));
+				Row rowTime = timeSheet.createRow((rowNum));
 				colNum=0;
 				String pairId = pairIds.get(i);
 				ReceptorLigandPairData pairData=pairsData.get(pairId);
 				row.createCell(colNum++).setCellValue(pairId);
 				row.createCell(colNum++).setCellValue(pairData.noHeavyAtoms);
 				row.createCell(colNum++).setCellValue(pairData.noActiveBonds);
+				//Nafisa
+				colNumTime=0;
+				rowTime.createCell(colNumTime++).setCellValue(pairId);
+
 				for (int j = 0; j < allPairsDockingResults.size(); j++) {
 					PairDockingResult dockingResult=allPairsDockingResults.get(j).get(pairId);
-					row.createCell(colNum++).setCellValue(Math.round(dockingResult.time * 1000.0)/1000.0);
+					row.createCell(colNum++).setCellValue(Math.round(dockingResult.searchTime * 1000.0)/1000.0);
+					//Nafisa
+					rowTime.createCell(colNumTime++).setCellValue(Math.round(dockingResult.searchTime * 1000.0)/1000.0);
+					rowTime.createCell(colNumTime++).setCellValue(Math.round((dockingResult.TotalTime - dockingResult.searchTime) * 1000.0)/1000.0);
+					rowTime.createCell(colNumTime++).setCellValue(Math.round(dockingResult.TotalTime * 1000.0)/1000.0);
+					//base to get from file name
+					rowTime.createCell(colNumTime++).setCellValue(1);
+
 					float[] bindingEnergies = dockingResult.conformationBindingEnergies;
 					for (int k = 0; k < bindingEnergies.length; k++) {
 						if (bindingEnergies[k]!=0) {
@@ -181,6 +210,7 @@ public class CollectResultsStatistics {
 						}
 					}
 				}
+				rowNum++;
 			}
 
 			if (refExcelFileString != null) {
@@ -357,7 +387,18 @@ public class CollectResultsStatistics {
 				}else if (line.matches("^searching finished in ([\\d\\.]+) seconds$")) {
 					String secString=line.substring("searching finished in ".length());
 					secString=secString.substring(0,secString.indexOf(" "));
-					pairDockingResult.time=Float.parseFloat(secString);
+					pairDockingResult.searchTime=Float.parseFloat(secString);
+				}else if (line.matches("^real\\s+((\\d+)h)?(\\d+)m([\\d\\.]+)s$")) { //real	1m17.745s
+					String[] splitter= line.split("[\\shms]");
+					float minutes= Float.parseFloat(splitter[splitter.length-2]);
+					float seconds= Float.parseFloat(splitter[splitter.length-1]);
+					float hours =0;
+					if(splitter.length>3){
+						hours= Float.parseFloat(splitter[1]);
+					}
+					float realTimeInSeconds = (hours*60*60)+minutes*60+seconds;
+					pairDockingResult.TotalTime=realTimeInSeconds;
+					
 				}else{
 					continue;
 				}
