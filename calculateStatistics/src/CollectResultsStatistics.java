@@ -378,16 +378,16 @@ public class CollectResultsStatistics {
 		ret.add(atoms);
 	}
 
-	Hashtable<String, PairDockingResult> parseLogFile(String logFileString) {
-		Hashtable<String, PairDockingResult> ret = new Hashtable<String, CollectResultsStatistics.PairDockingResult>(195);
+	public static Hashtable<String, PairDockingResult> parseLogFile(String logFileString) {
+		Hashtable<String, PairDockingResult> ret = new Hashtable<String, CollectResultsStatistics.PairDockingResult>();
 		try {
 			Scanner scanner = new Scanner(new File(logFileString));
 			String pairId;
 			PairDockingResult pairDockingResult=null;
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
-				if (line.matches("^\\s+Processing (\\d\\w\\w\\w)$")) {
-					pairId=line.substring(line.length()-4);
+				if (line.matches("^\\s+Processing (\\w{4,})$")) {
+					pairId=line.split("\\s+")[2];
 					pairDockingResult= new PairDockingResult();
 					ret.put(pairId, pairDockingResult);
 				}else if (line.matches("^\\s+(\\d)\\s+([\\d\\-\\.]+)\\s+([\\d\\-\\.]+)\\s+([\\d\\-\\.]+)$")) {

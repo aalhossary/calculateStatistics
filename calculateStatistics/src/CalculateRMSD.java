@@ -129,11 +129,11 @@ public class CalculateRMSD {
 	}
 
 	
-	float calculateRMSD(Atom[] atoms, Atom[] atoms2) {
+	static float  calculateRMSD(Atom[] atoms, Atom[] atoms2) {
 		return Math.max(rmsdPrime(atoms,atoms2),rmsdPrime(atoms2,atoms));
 	}
 
-	private float rmsdPrime(Atom[] atoms, Atom[] atoms2) {
+	private static float rmsdPrime(Atom[] atoms, Atom[] atoms2) {
 		float sumOfMin=0;
 		int n=0;
 		for (Atom atom : atoms) {
@@ -159,7 +159,7 @@ public class CalculateRMSD {
 		return (float) Math.sqrt(sumOfMin/n);
 	}
 
-	private ReceptorLigandPairData parseFile(File preparedLigandsFile) throws Exception{
+	public static ReceptorLigandPairData parseFile(File preparedLigandsFile) throws Exception{
 		Scanner tempScanner=null;
 		ReceptorLigandPairData pairDataToFill = new ReceptorLigandPairData();
 		ArrayList<Atom[]> modelsAccummulator= new ArrayList<CalculateRMSD.Atom[]>();
@@ -225,7 +225,7 @@ public class CalculateRMSD {
 		return pairDataToFill;
 	}
 
-	private void moveAtoms(ArrayList<Atom> smallerAtomAccumulator, ArrayList<Atom[]> ret) {
+	private static void moveAtoms(ArrayList<Atom> smallerAtomAccumulator, ArrayList<Atom[]> ret) {
 		Atom[] atoms = new Atom[smallerAtomAccumulator.size()];
 		smallerAtomAccumulator.toArray(atoms);
 		ret.add(atoms);
@@ -262,7 +262,7 @@ public class CalculateRMSD {
 	 79 - 80        LString(2)      charge        Charge on the atom.
 	 </pre>
 	 */
-	private Atom pdb_ATOM_Handler(String line) {
+	private static Atom pdb_ATOM_Handler(String line) {
 //		String chain_id      = line.substring(21,22);
 		// process group data:
 		// join residue numbers and insertion codes together
